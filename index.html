@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>항소담외과 AI 항문 자가진단 프로그램</title>
+  <style>
+    body { font-family: sans-serif; background: #f9f9f9; color: #333; padding: 20px; }
+    h1 { color: #0055a5; font-size: 24px; }
+    fieldset { margin-bottom: 15px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+    legend { font-weight: bold; }
+    label { display: block; margin: 5px 0; }
+    .note { font-size: 0.9em; color: #555; margin-top: 5px; }
+    input[type="number"] { width: 60px; }
+    button { background: #0055a5; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+    button:hover { background: #004080; }
+    #results { margin-top: 20px; padding: 15px; background: #eef; border-radius: 5px; display: none; }
+  </style>
+</head>
+<body>
+  <h1>항소담외과 AI 항문자가진단</h1>
+  <form id="diagnosisForm">
+    <fieldset>
+      <legend>1. 연령</legend>
+      <label><input type="number" id="age" min="0" max="120" required> 세</label>
+    </fieldset>
+    <fieldset>
+      <legend>2. 성별</legend>
+      <label><input type="radio" name="gender" value="male" required> 남성</label>
+      <label><input type="radio" name="gender" value="female"> 여성</label>
+    </fieldset>
+    <fieldset id="femaleHistory" style="display:none;">
+      <legend>3. 여성: 출산 정보</legend>
+      <label><input type="checkbox" id="gaveBirth"> 출산 경험</label>
+      <div id="birthDetails" style="display:none; margin-left:15px;">
+        <label><input type="checkbox" id="vaginalDelivery"> 자연분만</label>
+        <label>횟수: <input type="number" id="vaginalCount" min="0"></label>
+        <label><input type="checkbox" id="cSection"> 제왕절개</label>
+        <label>횟수: <input type="number" id="cSectionCount" min="0"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>4. 주요 항문 증상</legend>
+      <label><input type="checkbox" name="symptoms" value="pain_post"> 배변 후 통증</label>
+      <label><input type="checkbox" name="symptoms" value="pain_unrelated"> 배변과 무관 통증</label>
+      <label><input type="checkbox" name="symptoms" value="bleeding"> 출혈</label>
+      <label><input type="checkbox" name="symptoms" value="discharge"> 분비물</label>
+      <label><input type="checkbox" name="symptoms" value="itching"> 가려움</label>
+      <label><input type="checkbox" name="symptoms" value="swelling"> 갑작스런 부어오름</label>
+      <label><input type="checkbox" id="prolapseCheck"> 항문탈출</label>
+      <div id="prolapseOptions" style="display:none; margin-left:15px;">
+        <label><input type="checkbox" name="prolapseDetail" value="autoReduce"> 배변후 자동복원</label>
+        <label><input type="checkbox" name="prolapseDetail" value="manualReduce"> 수동복원</label>
+        <label><input type="checkbox" name="prolapseDetail" value="noReduce"> 복원불가</label>
+      </div>
+      <label><input type="checkbox" name="symptoms" value="mucus"> 점액</label>
+    </fieldset>
+    <fieldset>
+      <legend>4-1. 출혈 양상</legend>
+      <label><input type="radio" name="bleedColor" value="smear"> 소량 묻어남</label>
+      <label><input type="radio" name="bleedColor" value="bright"> 선홍색</label>
+      <label><input type="radio" name="bleedColor" value="dark"> 검붉은색</label>
+    </fieldset>
+    <fieldset>
+      <legend>5. 배변 횟수</legend>
+      <label><input type="radio" name="freqType" value="normal" checked> 하루 1회</label>
+      <label><input type="radio" name="freqType" value="frequent"> 하루 2회 이상</label>
+      <label><input type="radio" name="freqType" value="constipation"> 변비</label><br><br>
+      <div id="normalFreq"><label>횟수: <input type="number" id="freqNormal" min="0"> 회/일</label></div>
+      <label><input type="checkbox" id="freqMixed"> 변비/설사 반복</label>
+      <label><input type="checkbox" id="freqChange"> 최근 2~3개월간 배변습관이 변함</label>
+      <div class="note">※ 위 두 항목은 다른 선택지와 중복 가능</div>
+      <div id="frequentFreq" style="display:none;"><label>횟수: <input type="number" id="freqHigh" min="0"> 회/일</label></div>
+      <div id="constipationFreq" style="display:none;"><label>횟수: <input type="number" id="freqLow" min="0"> 회/주</label></div>
+    </fieldset>
+    <fieldset>
+      <legend>6. 배변 시간</legend>
+      <label><input type="number" id="duration" min="0"> 분</label>
+    </fieldset>
+    <fieldset>
+      <legend>7. 배변 경도 (Bristol 분류)</legend>
+      <label><input type="radio" name="hardness" value="1"> 1 = 토끼똥처럼 둥글면서 딱딱한 변</label>
+      <label><input type="radio" name="hardness" value="2"> 2 = 끊어지면서 표면이 갈라져 있는 변</label>
+      <label><input type="radio" name="hardness" value="3"> 3 = 바나나 모양의 부드러운 변</label>
+      <label><input type="radio" name="hardness" value="4"> 4 = 물에 풀어지는 변</label>
+      <label><input type="radio" name="hardness" value="5"> 5 = 설사</label>
+    </fieldset>
+    <fieldset>
+      <legend>8. 하루 식사 횟수</legend>
+      <label><input type="number" id="meals" min="1" max="10"> 회</label>
+    </fieldset>
+    <fieldset>
+      <legend>9. 하루 물 섭취량</legend>
+      <label><input type="number" id="water" min="0"> 병</label>
+    </fieldset>
+    <fieldset>
+      <legend>10. 과거 항문 수술 이력</legend>
+      <label><input type="checkbox" id="hSur"> 있음</label>
+    </fieldset>
+    <fieldset>
+      <legend>11. 최근 5년이내 대장내시경 받은 이력</legend>
+      <label><input type="checkbox" id="colonoscopy"> 받음</label>
+    </fieldset>
+    <fieldset>
+      <legend>12. 추가 증상</legend>
+      <label><input type="checkbox" name="extras" value="weightLoss"> 체중 감소</label>
+      <label><input type="checkbox" name="extras" value="familyCRC"> 대장/직장암 가족력</label>
+      <label><input type="checkbox" name="extras" value="abPain"> 복통</label>
+      <label><input type="checkbox" name="extras" value="diarrhea"> 만성 설사</label>
+      <label><input type="checkbox" name="extras" value="fever"> 발열</label>
+      <label><input type="checkbox" name="extras" value="mucusStool"> 점액변</label>
+      <label><input type="checkbox" name="extras" value="lowBackPain"> 요통</label>
+      <label><input type="checkbox" name="extras" value="pelvicPain"> 골반통증</label>
+    </fieldset>
+    <fieldset>
+      <legend>13. 과거력</legend>
+      <label><input type="checkbox" name="history" value="polyps"> 용종</label>
+      <label><input type="checkbox" name="history" value="colorectalSurgery"> 대장/직장 수술</label>
+      <label><input type="checkbox" name="history" value="abdominalSurgery"> 복부 수술</label>
+      <label><input type="checkbox" name="history" value="pelvicRadiation"> 골반 방사선</label>
+      <label><input type="checkbox" name="history" value="ibdDiagnosis"> 염증성 장질환</label>
+      <label><input type="checkbox" name="history" value="abscessSurgery"> 농양 수술</label>
+      <label><input type="checkbox" name="history" value="fistulaSurgery"> 치루 수술</label>
+    </fieldset>
+    <button type="button" onclick="runDiagnosis()">🩺 진단하기</button>
+  </form>
+  <div id="results">
+    <h2>예상 진단 결과</h2>
+    <ul id="diagnosisList"></ul>
+  </div>
+  <script>
+    document.querySelectorAll('input[name="gender"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        document.getElementById('femaleHistory').style.display = (radio.value==='female' && radio.checked) ? '' : 'none';
+      });
+    });
+    document.getElementById('gaveBirth')?.addEventListener('change', e => {
+      document.getElementById('birthDetails').style.display = e.target.checked ? '' : 'none';
+    });
+    document.getElementById('prolapseCheck').addEventListener('change', e => {
+      document.getElementById('prolapseOptions').style.display = e.target.checked ? '' : 'none';
+    });
+    document.getElementsByName('freqType').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const v = document.querySelector('input[name="freqType"]:checked').value;
+        document.getElementById('normalFreq').style.display = v==='normal' ? '' : 'none';
+        document.getElementById('frequentFreq').style.display = v==='frequent' ? '' : 'none';
+        document.getElementById('constipationFreq').style.display = v==='constipation' ? '' : 'none';
+      });
+    });
+    function runDiagnosis() {
+      const age = Number(document.getElementById('age').value);
+      const gender = document.querySelector('input[name="gender"]:checked')?.value;
+      const symptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(i=>i.value);
+      const bleedColor = document.querySelector('input[name="bleedColor"]:checked')?.value;
+      const prolapse = document.getElementById('prolapseCheck').checked ?
+        Array.from(document.querySelectorAll('input[name="prolapseDetail"]:checked')).map(i=>i.value) : [];
+      const freqType = document.querySelector('input[name="freqType"]:checked')?.value;
+      const freq = freqType==='frequent'?Number(document.getElementById('freqHigh').value):freqType==='constipation'?Number(document.getElementById('freqLow').value):Number(document.getElementById('freqNormal').value);
+      const freqMixed = document.getElementById('freqMixed').checked;
+      const freqChange = document.getElementById('freqChange').checked;
+      const duration = Number(document.getElementById('duration').value);
+      const hardness = document.querySelector('input[name="hardness"]:checked')?.value;
+      const hSur = document.getElementById('hSur').checked;
+      const colonoscopyDone = document.getElementById('colonoscopy').checked;
+      const extras = Array.from(document.querySelectorAll('input[name="extras"]:checked')).map(i=>i.value);
+      const history = Array.from(document.querySelectorAll('input[name="history"]:checked')).map(i=>i.value);
+      
+      const scores = {
+        '치핵 2기':0,'치핵 3기':0,'치핵 4기':0,'급성 혈전성 외치핵':0,'교액성 치핵':0,'급성 치열':0,'만성 치열':0,'단순 치루':0,'복잡 치루':0,'항문농양':0,'과민성 대장증후군':0,'염증성 장질환 의심':0,'직장암 의심':0,'대장암 의심':0,'직장탈출':0,'변실금':0,'항문소양증':0,'일과성 직장통':0
+      };
+      if(symptoms.includes('bleeding')){scores['치핵 2기']+=3;scores['급성 치열']+=2;}
+      if(symptoms.includes('swelling')){scores['항문농양']+=3;scores['급성 혈전성 외치핵']+=3;}
+      if(bleedColor==='smear'){scores['급성 치열']+=1;scores['항문소양증']+=1;}
+      if(bleedColor==='bright'){scores['치핵 2기']+=2;scores['급성 치열']+=1;scores['염증성 장질환 의심']+=1;scores['직장암 의심']+=1;}
+      if(bleedColor==='dark'){scores['대장암 의심']+=3;}
+      prolapse.forEach(v=>{if(v==='autoReduce'){scores['치핵 3기']+=2;scores['치핵 4기']+=1;}if(v==='manualReduce'){scores['치핵 3기']+=3;scores['치핵 4기']+=2;}if(v==='noReduce'){scores['치핵 4기']+=4;scores['직장탈출']+=5;}});
+      if(duration>10&&hardness<=2){scores['급성 치열']+=3;}
+      if(freqMixed){scores['과민성 대장증후군']+=3;if(age>=50) scores['직장암 의심']+=1;}
+      if(freqChange){if(age<50) scores['과민성 대장증후군']+=2;else{scores['대장암 의심']+=2;scores['직장암 의심']+=2;}}
+      if(extras.includes('diarrhea'))scores['염증성 장질환 의심']+=2;
+      if(extras.includes('fever')||extras.includes('mucusStool'))scores['염증성 장질환 의심']+=2;
+      if(gender==='female'&&document.getElementById('gaveBirth').checked&&age>=40&&symptoms.includes('pain_unrelated')&&(extras.includes('lowBackPain')||extras.includes('pelvicPain'))){scores['일과성 직장통']+=5;}
+      if(history.includes('abscessSurgery')||history.includes('fistulaSurgery'))scores['복잡 치루']+=3;
+      if((history.includes('abscessSurgery')||history.includes('fistulaSurgery'))&&freqType==='frequent'&&freq>=3&&symptoms.includes('discharge')&&symptoms.includes('pain_post'))scores['복잡 치루']+=5;
+      if(age>=50&&!colonoscopyDone&&symptoms.includes('bleeding')&&freqChange){scores['대장암 의심']+=3;scores['직장암 의심']+=3;}
+      if(extras.includes('familyCRC')){scores['대장암 의심']+=2;scores['직장암 의심']+=2;}
+      const total=Object.values(scores).reduce((s,v)=>s+Math.max(v,0),0)||1;
+      const probs=Object.entries(scores).map(([d,v])=>[d,Math.round(Math.max(v,0)/total*100)]).sort((a,b)=>b[1]-a[1]);
+      const list=document.getElementById('diagnosisList');list.innerHTML='';
+      if(probs[0][1]<10&&freqType==='normal'&&!freqMixed&&!freqChange){const li=document.createElement('li');li.textContent='일시적 증상으로 판단되며, 증상 지속 시 전문의 상담 요함';list.appendChild(li);}else{probs.slice(0,3).forEach(([d,p])=>{const li=document.createElement('li');li.textContent=`${d}: ${p}%`;list.appendChild(li);});}
+      document.getElementById('results').style.display='block';
+    }
+  </script>
+</body>
+</html>
